@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Card Fraud Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="brand"><div class="brand-mark">CC</div><div><strong>Fraud<span>IQ</span></strong><small>Analytics Dashboard</small></div></div>
+  <nav>
+    <a class="nav-link active" href="#overview">Overview</a>
+    <a class="nav-link" href="#distributions">Distributions</a>
+    <a class="nav-link" href="#correlation">Correlation</a>
+    <a class="nav-link" href="#models">Models</a>
+    <a class="nav-link" href="#transactions">Transactions</a>
+  </nav>
+  <div class="sidebar-note"><span class="dot"></span><div><b>Dataset loaded</b><small>284,807 transactions</small></div></div>
+</aside>
+<main class="main">
+<header class="topbar"><div><p class="eyebrow">MACHINE LEARNING • FRAUD DETECTION</p><h1>Credit Card Fraud Analytics</h1><p class="sub">Interactive view of the dataset and analysis pipeline from your Python notebook.</p></div><div class="status">● Static demo • API-ready</div></header>
+
+<section id="overview" class="section">
+<div class="kpi-grid">
+ <div class="kpi"><span>Total transactions</span><strong id="total">—</strong><small>Rows in source dataset</small></div>
+ <div class="kpi"><span>Fraudulent</span><strong id="fraud">—</strong><small id="fraudRate">—</small></div>
+ <div class="kpi"><span>Non-fraudulent</span><strong id="normal">—</strong><small>Class = 0</small></div>
+ <div class="kpi"><span>Average amount</span><strong id="avgAmount">—</strong><small>Original Amount field</small></div>
+</div>
+<div class="grid-2">
+ <article class="card-panel chart-panel"><div class="panel-head"><div><h2>Transaction class</h2><p>Extreme class imbalance in the original dataset</p></div></div><div class="chart-wrap"><canvas id="classChart"></canvas></div></article>
+ <article class="card-panel insight"><div class="panel-head"><div><h2>Pipeline</h2><p>Steps represented in the supplied Python analysis</p></div></div>
+  <div class="steps">
+   <div><b>01</b><span>Scale <code>Time</code> and <code>Amount</code></span></div>
+   <div><b>02</b><span>90/10 train-test split + balanced subsample</span></div>
+   <div><b>03</b><span>Outlier removal using 2.5 × IQR</span></div>
+   <div><b>04</b><span>t-SNE dimensionality reduction</span></div>
+   <div><b>05</b><span>Compare LR, LDA, KNN, CART, SVM, XGB and RF</span></div>
+  </div>
+ </article>
+</div>
+</section>
+
+<section id="distributions" class="section">
+<div class="section-title"><div><p class="eyebrow">EXPLORATION</p><h2>Transaction distributions</h2></div></div>
+<div class="grid-2">
+ <article class="card-panel chart-panel"><div class="panel-head"><div><h2>Time distribution</h2><p>20-bin histogram of transaction time</p></div></div><div class="chart-wrap"><canvas id="timeChart"></canvas></div></article>
+ <article class="card-panel chart-panel"><div class="panel-head"><div><h2>Amount distribution</h2><p>20-bin histogram of transaction amount</p></div></div><div class="chart-wrap"><canvas id="amountChart"></canvas></div></article>
+</div>
+</section>
+
+<section id="correlation" class="section">
+<div class="section-title"><div><p class="eyebrow">FEATURE ANALYSIS</p><h2>Correlation with fraud class</h2></div></div>
+<div class="grid-2">
+ <article class="card-panel chart-panel"><div class="panel-head"><div><h2>Strongest negative correlations</h2><p>Features highlighted by the notebook</p></div></div><div class="chart-wrap tall"><canvas id="negChart"></canvas></div></article>
+ <article class="card-panel chart-panel"><div class="panel-head"><div><h2>Strongest positive correlations</h2><p>Features highlighted by the notebook</p></div></div><div class="chart-wrap tall"><canvas id="posChart"></canvas></div></article>
+</div>
+</section>
+
+<section id="models" class="section">
+<div class="section-title"><div><p class="eyebrow">MODEL BENCHMARK</p><h2>Classification algorithms</h2></div></div>
+<article class="card-panel">
+<p class="muted">The Python source evaluates these models with 10-fold cross-validation using ROC-AUC. The notebook does not save the resulting scores, so this frontend intentionally does not invent them. Once the backend exposes the scores, this panel can be populated directly.</p>
+<div class="model-grid">
+ <div class="model">LR <span>Logistic Regression</span></div><div class="model">LDA <span>Linear Discriminant Analysis</span></div><div class="model">KNN <span>K-Nearest Neighbors</span></div><div class="model">CART <span>Decision Tree</span></div><div class="model">SVM <span>Support Vector Machine</span></div><div class="model">XGB <span>XGBoost</span></div><div class="model">RF <span>Random Forest</span></div>
+</div>
+</article>
+</section>
+
+<section id="transactions" class="section">
+<div class="section-title"><div><p class="eyebrow">DATA PREVIEW</p><h2>Sample transactions</h2></div><input id="search" class="search" placeholder="Search class / amount / time..."></div>
+<article class="card-panel table-panel"><div class="table-responsive"><table><thead><tr><th>Time</th><th>Amount</th><th>Class</th><th>V1</th><th>V2</th><th>V3</th><th>V4</th><th>V5</th></tr></thead><tbody id="txBody"></tbody></table></div></article>
+</section>
+<footer>FraudIQ • Frontend generated from the supplied Python analysis and credit-card dataset</footer>
+</main></div>
+<script src="app.js"></script>
+</body>
+</html>
