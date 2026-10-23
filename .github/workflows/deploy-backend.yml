@@ -1,0 +1,81 @@
+
+name: Deploy FastAPI Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Deploy backend through AWS Systems Manager
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          COMMAND_ID=$(aws ssm send-command \
+            --region ap-south-1 \
+            --instance-ids i-0e882e4c29544508f \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy FastAPI backend from GitHub Actions" \
+            --parameters 'commands=[
+              "set -eu",
+              "cd /home/ssm-user/credit-fraud-api/github-repo",
+              "git fetch origin main",
+              "git reset --hard origin/main",
+              "test -f backend/main.py",
+              "test -f backend/requirements.txt",
+              "cp backend/main.py /home/ssm-user/credit-fraud-api/fastapi-backend/main.py",
+              "cp backend/requirements.txt /home/ssm-user/credit-fraud-api/fastapi-backend/requirements.txt",
+              "/home/ssm-user/credit-fraud-api/venv/bin/pip install -r /home/ssm-user/credit-fraud-api/fastapi-backend/requirements.txt",
+              "sudo systemctl restart credit-fraud-api",
+              "for i in $(seq 1 60); do if curl -fsS http://127.0.0.1:8000/api/health; then exit 0; fi; sleep 5; done",
+              "echo Backend health check failed",
+              "sudo journalctl -u credit-fraud-api -n 80 --no-pager",
+              "exit 1"
+            ]' \
+            --query 'Command.CommandId' \
+            --output text)
+
+          echo "SSM command ID: $COMMAND_ID"
+
+          if ! aws ssm wait command-executed \
+            --region ap-south-1 \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-0e882e4c29544508f; then
+            aws ssm get-command-invocation \
+              --region ap-south-1 \
+              --command-id "$COMMAND_ID" \
+              --instance-id i-0e882e4c29544508f \
+              --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
+              --output json || true
+            exit 1
+          fi
+
+          aws ssm get-command-invocation \
+            --region ap-south-1 \
+            --command-id "$COMMAND_ID" \
+            --instance-id i-0e882e4c29544508f \
+            --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
+            --output json
