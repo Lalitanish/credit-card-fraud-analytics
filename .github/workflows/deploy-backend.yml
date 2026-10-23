@@ -42,6 +42,7 @@ jobs:
             --parameters 'commands=[
               "set -eu",
               "cd /home/ssm-user/credit-fraud-api/github-repo",
+              "git config --global --add safe.directory /home/ssm-user/credit-fraud-api/github-repo",
               "git fetch origin main",
               "git reset --hard origin/main",
               "test -f backend/main.py",
