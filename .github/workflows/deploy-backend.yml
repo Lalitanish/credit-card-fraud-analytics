@@ -41,6 +41,7 @@ jobs:
             --comment "Deploy FastAPI backend from GitHub Actions" \
             --parameters 'commands=[
               "set -eu",
+              "export HOME=/home/ssm-user",
               "cd /home/ssm-user/credit-fraud-api/github-repo",
               "git config --global --add safe.directory /home/ssm-user/credit-fraud-api/github-repo",
               "git fetch origin main",
