@@ -474,5 +474,139 @@ button.disabled = false;
   });
 }
 
+
+function setupNewPredictionForm() {
+  const form = document.getElementById("newPredictionForm");
+  const timeInput = document.getElementById("newTime");
+  const amountInput = document.getElementById("newAmount");
+  const fields1 = document.getElementById("newFeatureFields");
+  const fields2 = document.getElementById("newFeatureFields2");
+  const fillButton = document.getElementById("fillSampleButton");
+  const button = document.getElementById("newPredictButton");
+  const status = document.getElementById("newPredictionStatus");
+  const result = document.getElementById("newPredictionResult");
+
+  if (!form || !fields1 || !fields2 || !fillButton ||
+      !button || !status || !result) return;
+
+  // Create input fields V1 through V28.
+  for (let i = 1; i <= 28; i++) {
+    const key = `V${i}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = "mb-2";
+
+    const label = document.createElement("label");
+    label.htmlFor = `new${key}`;
+    label.textContent = key;
+
+    const input = document.createElement("input");
+    input.id = `new${key}`;
+    input.name = key;
+    input.type = "number";
+    input.step = "any";
+    input.required = true;
+    input.className = "form-control";
+
+    wrapper.append(label, input);
+    (i <= 14 ? fields1 : fields2).appendChild(wrapper);
+  }
+
+  // Fill the form from a transaction selected in the dashboard table.
+  fillButton.addEventListener("click", () => {
+    const row =   (typeof selectedTransaction !== "undefined" && selectedTransaction)     ? selectedTransaction     : DATA?.sample?.[0];
+
+    if (!row) {
+      status.textContent = "No sample transaction is available.";
+      return;
+    }
+
+    timeInput.value = row.Time ?? "";
+    amountInput.value = row.Amount ?? "";
+
+    for (let i = 1; i <= 28; i++) {
+      const key = `V${i}`;
+      const input = document.getElementById(`new${key}`);
+      input.value = row[key] ?? "";
+    }
+
+    status.textContent = selectedTransaction
+      ? "Filled using the transaction selected in the table."
+      : "Filled using the first available sample transaction.";
+    result.hidden = true;
+  });
+
+  // Send the entered values to the existing FastAPI endpoint.
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    result.hidden = true;
+
+    const payload = {
+      Time: Number(timeInput.value),
+      Amount: Number(amountInput.value)
+    };
+
+    for (let i = 1; i <= 28; i++) {
+      const key = `V${i}`;
+      const value = document.getElementById(`new${key}`).value;
+
+      if (value.trim() === "" || !Number.isFinite(Number(value))) {
+        status.textContent = `Please enter a valid value for ${key}.`;
+        return;
+      }
+
+      payload[key] = Number(value);
+    }
+
+    button.disabled = true;
+    status.textContent = "Analyzing transaction...";
+
+    try {
+      const response = await fetch(`${API_BASE}/api/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Prediction request failed.");
+      }
+
+      result.replaceChildren();
+
+      const heading = document.createElement("h3");
+      heading.textContent = Number(data.prediction) === 1
+        ? "Prediction: Fraudulent"
+        : "Prediction: Non-Fraudulent";
+
+      const model = document.createElement("p");
+      model.textContent = `Model: ${data.model || "Default model"}`;
+      result.append(heading, model);
+
+      if (data.fraud_probability !== null &&
+          data.fraud_probability !== undefined) {
+        const probability = document.createElement("p");
+        probability.textContent =
+          `Estimated fraud probability: ${
+            (Number(data.fraud_probability) * 100).toFixed(2)
+          }%`;
+        result.appendChild(probability);
+      }
+
+      result.hidden = false;
+      status.textContent = "Prediction completed.";
+    } catch (error) {
+      status.textContent = `Prediction failed: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 setupSearch();
-init().then(() => setupPrediction());
+
+init().then(() => {
+  setupPrediction();
+  setupNewPredictionForm();
+});
