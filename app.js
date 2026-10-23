@@ -355,6 +355,124 @@ function setupSearch() {
   });
 }
 
-setupSearch();
-init();
+function setupPrediction() {
+  const select = document.getElementById("predictionTransaction");
+  const button = document.getElementById("predictButton");
+  const status = document.getElementById("predictionStatus");
+  const result = document.getElementById("predictionResult");
 
+  if (!select || !button || !status || !result) return;
+
+ const rows = DATA?.sample || [];
+
+if (rows.length === 0) {
+  select.innerHTML = '<option value="">No transactions available</option>';
+  button.disabled = true;
+  status.textContent = "Transactions could not be loaded. Please refresh the dashboard.";
+  return;
+}
+
+button.disabled = false;
+
+  select.innerHTML = '<option value="">Choose a transaction...</option>';
+
+  rows.forEach((row, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+
+    const amount = Number(row.Amount || 0).toFixed(2);
+    const actualClass = Number(row.Class) === 1 ? "Fraud" : "Normal";
+
+    option.textContent =
+      `Transaction ${index + 1} — Amount: $${amount} — Actual: ${actualClass}`;
+
+    select.appendChild(option);
+  });
+
+  button.addEventListener("click", async () => {
+    const index = select.value;
+
+    if (index === "") {
+      status.textContent = "Please select a transaction first.";
+      result.hidden = true;
+      return;
+    }
+
+    const row = rows[Number(index)];
+    const payload = {
+      Time: Number(row.Time),
+      Amount: Number(row.Amount)
+    };
+
+    for (let i = 1; i <= 28; i++) {
+      const key = `V${i}`;
+
+      if (row[key] === undefined || row[key] === null) {
+        status.textContent = `Transaction is missing ${key}.`;
+        result.hidden = true;
+        return;
+      }
+
+      payload[key] = Number(row[key]);
+    }
+
+    button.disabled = true;
+    status.textContent = "Analyzing transaction...";
+    result.hidden = true;
+
+    try {
+      const response = await fetch(`${API_BASE}/api/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Prediction request failed.");
+      }
+
+      const isFraud = Number(data.prediction) === 1;
+      const probability = data.fraud_probability;
+
+      result.replaceChildren();
+
+      const heading = document.createElement("h3");
+      heading.textContent = isFraud
+        ? "Prediction: Fraudulent"
+        : "Prediction: Non-Fraudulent";
+
+      const modelText = document.createElement("p");
+      modelText.textContent = `Model: ${data.model || "Default model"}`;
+
+      result.append(heading, modelText);
+
+      if (probability !== null && probability !== undefined) {
+        const probabilityText = document.createElement("p");
+        probabilityText.textContent =
+          `Estimated fraud probability: ${(Number(probability) * 100).toFixed(2)}%`;
+        result.appendChild(probabilityText);
+      }
+
+      const actualText = document.createElement("p");
+      actualText.textContent =
+        `Dataset label for comparison: ${
+          Number(row.Class) === 1 ? "Fraudulent" : "Non-Fraudulent"
+        }`;
+
+      result.appendChild(actualText);
+      result.hidden = false;
+      status.textContent = "Prediction completed.";
+    } catch (error) {
+      status.textContent = `Prediction failed: ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+setupSearch();
+init().then(() => setupPrediction());
