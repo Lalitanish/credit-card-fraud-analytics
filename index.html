@@ -74,35 +74,52 @@
 </article>
 </section>
 
+
 <section id="prediction" class="section">
   <div class="section-title">
     <div>
       <p class="eyebrow">LIVE MODEL</p>
-      <h2>Fraud Prediction</h2>
+      <h2>New Transaction Prediction</h2>
     </div>
   </div>
 
   <article class="card-panel">
-    <p>
-      Select a sample transaction from the dataset and ask the deployed
-      machine-learning model to predict whether it is fraudulent.
-    </p>
+    <p>Enter the transaction time, amount, and anonymized features V1–V28.</p>
 
-    <label for="predictionTransaction">Select a sample transaction</label>
-    <select id="predictionTransaction" class="form-select mb-3">
-      <option value="">Loading transactions...</option>
-    </select>
+    <form id="newPredictionForm">
+      <div class="grid-2">
+        <div>
+          <label for="newTime">Transaction Time (seconds)</label>
+          <input id="newTime" name="Time" type="number" min="0" step="any" class="form-control mb-3" required>
+        </div>
+        <div>
+          <label for="newAmount">Transaction Amount</label>
+          <input id="newAmount" name="Amount" type="number" min="0" step="any" class="form-control mb-3" required>
+        </div>
+      </div>
 
-    <button id="predictButton" type="button" class="btn btn-dark">
-      Predict Fraud
-    </button>
+      <h3>Transaction Features V1–V28</h3>
+      <p class="muted">Enter the actual feature values. Do not guess these values for a real transaction.</p>
 
-    <p id="predictionStatus" class="mt-3" role="status"></p>
-    <div id="predictionResult" hidden></div>
+      <div class="grid-2">
+        <div id="newFeatureFields"></div>
+        <div id="newFeatureFields2"></div>
+      </div>
+
+      <button type="button" id="fillSampleButton" class="btn btn-outline-secondary mt-2">
+        Fill from selected sample
+      </button>
+
+      <button type="submit" id="newPredictButton" class="btn btn-dark mt-2">
+        Predict New Transaction
+      </button>
+    </form>
+
+    <p id="newPredictionStatus" class="mt-3" role="status"></p>
+    <div id="newPredictionResult" hidden></div>
 
     <small class="text-muted">
-      Demonstration only: predictions may be incorrect and should not be used
-      as the sole basis for real financial decisions.
+      Educational demonstration only. Predictions may be incorrect.
     </small>
   </article>
 </section>
